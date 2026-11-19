@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Course AI Study Buddy</title>
+<title>FreeLLM Assistant</title>
 <style>
   :root {
     --bg: #f6f7fb; --panel: #ffffff; --panel-2: #f1f3f9; --text: #1b1f2a; --muted: #5d6475;
@@ -32,7 +32,7 @@
   button, input, select, textarea { font: inherit; color: inherit; }
   a { color: var(--accent); }
 
-  header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--panel); position: sticky; top: 0; z-index: 5; flex-wrap: wrap; }
+  header { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--panel); position: sticky; top: 0; z-index: 5; flex-wrap: wrap; }
   header h1 { font-size: 18px; margin: 0; letter-spacing: -.01em; }
   header .sub { color: var(--muted); font-size: 13px; }
   .spacer { flex: 1; }
@@ -49,66 +49,76 @@
   .btn:disabled { opacity: .55; cursor: not-allowed; }
   .btn.small { padding: 4px 10px; font-size: 13px; }
 
-  main { display: grid; grid-template-columns: minmax(280px, 400px) 1fr; gap: 18px; padding: 18px 20px 40px; max-width: 1400px; margin: 0 auto; }
-  @media (max-width: 860px) { main { grid-template-columns: 1fr; padding: 14px 16px 40px; } }
+  main { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 18px; padding: 18px 20px 40px; max-width: 1500px; margin: 0 auto; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 14px 16px 40px; } }
   .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; min-width: 0; }
   .card h2 { font-size: 15px; margin: 0 0 4px; }
   .hint { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
   textarea { width: 100%; border: 1px solid var(--border); background: var(--panel-2); border-radius: 9px; padding: 10px; resize: vertical; }
   textarea:focus, input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-  #material { min-height: 320px; font-size: 14px; }
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .row.between { justify-content: space-between; }
-  .counter { color: var(--muted); font-size: 12px; }
-  select, input[type=text], input[type=password], input[type=number] { border: 1px solid var(--border); background: var(--panel-2); border-radius: 9px; padding: 7px 10px; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 10px; }
+  .field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); min-width: 0; }
+  .field select, .field input { color: var(--text); }
+  select, input[type=text], input[type=password], input[type=number] { border: 1px solid var(--border); background: var(--panel-2); border-radius: 9px; padding: 7px 10px; max-width: 100%; }
 
-  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: -4px -4px 14px; padding: 0 4px; overflow-x: auto; }
-  .tab { border: none; background: none; padding: 9px 12px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; white-space: nowrap; }
+  /* files */
+  .drop { display: block; border: 2px dashed var(--border); border-radius: 12px; padding: 18px 12px; text-align: center; cursor: pointer; color: var(--muted); transition: .15s; }
+  .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
+  .drop b { color: var(--text); }
+  .filelist { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .file { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel-2); }
+  .file .name { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file .info { font-size: 12px; color: var(--muted); }
+  .file button { border: none; background: none; cursor: pointer; color: var(--muted); font-size: 16px; padding: 2px 4px; }
+  .file button:hover { color: var(--bad); }
+  .file.err { background: var(--bad-soft); }
+
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin: -4px -4px 14px; padding: 0 4px; overflow-x: auto; }
+  .tab { border: none; background: none; padding: 9px 11px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; white-space: nowrap; }
   .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
   .panel { display: none; } .panel.active { display: block; }
 
-  .chatlog { display: flex; flex-direction: column; gap: 12px; min-height: 240px; max-height: 58vh; overflow-y: auto; padding: 4px 2px 8px; }
+  .chatlog { display: flex; flex-direction: column; gap: 12px; min-height: 260px; max-height: 60vh; overflow-y: auto; padding: 4px 2px 8px; }
   .msg { max-width: 92%; padding: 10px 13px; border-radius: 12px; overflow-wrap: anywhere; }
   .msg.user { align-self: flex-end; background: var(--accent); color: var(--accent-text); white-space: pre-wrap; }
   .msg.ai { align-self: flex-start; background: var(--panel-2); border: 1px solid var(--border); }
   .msg.err { align-self: flex-start; background: var(--bad-soft); color: var(--bad); }
-  .meta { font-size: 12px; color: var(--muted); margin-top: 6px; font-family: var(--mono); }
+  .meta { font-size: 12px; color: var(--muted); margin-top: 6px; font-family: var(--mono); overflow-wrap: anywhere; }
   .empty { color: var(--muted); text-align: center; padding: 40px 10px; }
   .composer { display: flex; gap: 8px; margin-top: 10px; }
   .composer textarea { min-height: 46px; height: 46px; }
+  .ctx { font-size: 12px; color: var(--muted); margin-top: 6px; }
 
   .md h1, .md h2, .md h3 { font-size: 1.05em; margin: .8em 0 .3em; }
   .md p { margin: .4em 0; } .md ul, .md ol { margin: .3em 0; padding-left: 1.3em; }
   .md code { font-family: var(--mono); font-size: .9em; background: var(--panel); border: 1px solid var(--border); padding: 0 4px; border-radius: 4px; }
   .md pre { background: var(--panel); border: 1px solid var(--border); padding: 10px; border-radius: 8px; overflow-x: auto; }
   .md pre code { border: none; padding: 0; }
+  .md table { border-collapse: collapse; margin: .5em 0; display: block; overflow-x: auto; }
+  .md td, .md th { border: 1px solid var(--border); padding: 4px 8px; }
 
-  .output { background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-top: 12px; min-height: 60px; }
+  .output { background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-top: 12px; min-height: 80px; max-height: 60vh; overflow-y: auto; overflow-wrap: anywhere; }
+  .outbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  .progress { font-size: 13px; color: var(--muted); }
 
-  .quiz-q { border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-top: 10px; background: var(--panel-2); }
-  .quiz-q .q { font-weight: 600; margin-bottom: 8px; }
-  .opt { display: block; width: 100%; text-align: left; margin: 5px 0; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); cursor: pointer; }
-  .opt:hover:not(:disabled) { border-color: var(--accent); }
-  .opt.right { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
-  .opt.wrong { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); }
-  .explain { font-size: 13px; color: var(--muted); margin-top: 6px; }
-  .score { font-weight: 600; margin-top: 12px; }
-
-  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 12px; }
-  .flash { min-height: 140px; border-radius: 12px; border: 1px solid var(--border); background: var(--panel-2); padding: 14px; cursor: pointer; display: flex; flex-direction: column; justify-content: center; text-align: center; transition: background .15s; }
-  .flash.flipped { background: var(--accent-soft); }
-  .flash .side { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; }
+  .tablewrap { overflow: auto; max-height: 50vh; border: 1px solid var(--border); border-radius: 10px; margin-top: 10px; }
+  table.data { border-collapse: collapse; font-size: 13px; width: max-content; min-width: 100%; }
+  table.data th, table.data td { border-bottom: 1px solid var(--border); padding: 5px 9px; text-align: left; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  table.data th { position: sticky; top: 0; background: var(--panel-2); font-weight: 600; }
+  table.data td.n { color: var(--muted); }
 
   .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
   .stat { background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
   .stat .v { font-size: 22px; font-weight: 700; }
   .stat .l { font-size: 12px; color: var(--muted); }
-  .tablewrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-  th { color: var(--muted); font-weight: 600; }
+  table.log { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.log th, table.log td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  table.log th { color: var(--muted); font-weight: 600; }
   td.mono { font-family: var(--mono); }
-  .ok-t { color: var(--ok); } .bad-t { color: var(--bad); }
+  .ok-t { color: var(--ok); } .bad-t { color: var(--bad); } .warn-t { color: var(--warn); }
+  .section-title { font-weight: 600; margin: 16px 0 6px; }
 
   dialog { border: 1px solid var(--border); border-radius: 14px; background: var(--panel); color: var(--text); padding: 0; width: min(560px, calc(100vw - 32px)); }
   dialog::backdrop { background: rgba(0,0,0,.4); }
@@ -127,15 +137,15 @@
 <body>
 <header>
   <div>
-    <h1>📚 Course AI Study Buddy</h1>
-    <div class="sub">Free AI tutor powered by FreeLLMAPI. It runs on your Mac and uses free AI providers.</div>
+    <h1>🤖 FreeLLM Assistant</h1>
+    <div class="sub">Chat, write, translate, summarise and work on your files using free AI. It runs on your own Mac.</div>
   </div>
   <div class="spacer"></div>
   <span id="status" class="pill"><span class="dot"></span><span id="statusText">Checking…</span></span>
   <label class="row" style="gap:6px;font-size:13px;color:var(--muted)">AI mode
     <select id="mode" title="How the router chooses a model">
-      <option value="auto">Auto (balanced)</option>
       <option value="auto:fast">Fast</option>
+      <option value="auto">Balanced</option>
       <option value="auto:smart">Smartest available</option>
       <option value="auto:reliable">Most reliable</option>
       <option value="fusion">Fusion (several AIs + judge, slow)</option>
@@ -145,86 +155,169 @@
 </header>
 
 <main>
-  <section class="card">
-    <div class="row between"><h2>1. Course material</h2><span class="counter" id="count">0 characters</span></div>
-    <p class="hint">Paste lecture notes or a chapter, or load a .txt, .md or .pdf file. Every tool on the right uses this text.</p>
-    <textarea id="material" placeholder="Paste your course notes here…"></textarea>
+  <aside class="card">
+    <div class="row between"><h2>📎 Your files</h2><span class="hint" style="margin:0" id="fileCount"></span></div>
+    <p class="hint">Excel (.xlsx, .xls, .csv), Word (.docx), PDF and text files. Ticked files are used by Chat, Write and Summarise.</p>
+    <label class="drop" id="drop" for="fileInput">
+      <div style="font-size:26px">⬆️</div>
+      <b>Click to upload</b> or drag files here
+      <div style="font-size:12px;margin-top:4px">Files are read on this computer and never uploaded anywhere</div>
+    </label>
+    <input type="file" id="fileInput" multiple class="hidden"
+      accept=".xlsx,.xls,.xlsm,.ods,.csv,.tsv,.docx,.pdf,.txt,.md,.markdown,.json,.html,.htm,.xml,.log,.rtf">
+    <ul class="filelist" id="fileList"></ul>
     <div class="row" style="margin-top:10px">
-      <label class="btn small" for="file">📄 Load file</label>
-      <input type="file" id="file" accept=".txt,.md,.markdown,.csv,.pdf,text/plain,application/pdf" class="hidden">
-      <button class="btn small" id="sampleBtn">✨ Try a sample lesson</button>
-      <button class="btn small" id="clearBtn">Clear</button>
+      <button class="btn small" id="sampleBtn">✨ Add sample files</button>
+      <button class="btn small" id="clearFiles">Remove all</button>
     </div>
-    <p class="hint" id="fileInfo" style="margin-top:8px"></p>
-  </section>
+  </aside>
 
   <section class="card">
     <div class="tabs" role="tablist">
-      <button class="tab" role="tab" data-tab="chat" aria-selected="true">💬 Ask the tutor</button>
-      <button class="tab" role="tab" data-tab="summary" aria-selected="false">📝 Summary</button>
-      <button class="tab" role="tab" data-tab="quiz" aria-selected="false">❓ Quiz</button>
-      <button class="tab" role="tab" data-tab="cards" aria-selected="false">🃏 Flashcards</button>
-      <button class="tab" role="tab" data-tab="log" aria-selected="false">📊 Test log</button>
+      <button class="tab" role="tab" data-tab="chat" aria-selected="true">💬 Chat</button>
+      <button class="tab" role="tab" data-tab="write" aria-selected="false">✍️ Write</button>
+      <button class="tab" role="tab" data-tab="translate" aria-selected="false">🌐 Translate</button>
+      <button class="tab" role="tab" data-tab="summary" aria-selected="false">📄 Summarise</button>
+      <button class="tab" role="tab" data-tab="excel" aria-selected="false">📊 Excel / Data</button>
+      <button class="tab" role="tab" data-tab="log" aria-selected="false">📈 Log</button>
     </div>
 
     <div id="noModels" class="notice warn hidden"></div>
 
+    <!-- CHAT -->
     <div class="panel active" data-panel="chat">
-      <div class="chatlog" id="chatlog"><div class="empty" id="chatEmpty">Ask anything about your course material, for example <em>"Explain this like I'm new to the topic"</em> or <em>"Give me a real-life example"</em>.</div></div>
+      <div class="chatlog" id="chatlog"></div>
+      <div class="ctx" id="chatCtx"></div>
       <div class="composer">
-        <textarea id="question" placeholder="Type your question… (Enter to send, Shift+Enter for a new line)"></textarea>
+        <textarea id="question" placeholder="Ask anything… (Enter to send, Shift+Enter for a new line)"></textarea>
         <button class="btn primary" id="askBtn">Send</button>
       </div>
       <div class="row" style="margin-top:8px">
-        <button class="btn small" data-quick="Explain the main idea of this material in simple words, like I'm a beginner.">Explain simply</button>
-        <button class="btn small" data-quick="Give me 3 real-life examples that illustrate this material.">Real-life examples</button>
-        <button class="btn small" data-quick="What are the most common mistakes or misconceptions students have about this topic?">Common mistakes</button>
+        <button class="btn small" data-quick="Summarise the attached files in a few bullet points.">Summarise my files</button>
+        <button class="btn small" data-quick="What are the most important numbers, facts and dates in the attached files?">Key facts & numbers</button>
+        <button class="btn small" data-quick="Based on the attached files, what should I do next? Give a short action list.">Action items</button>
         <button class="btn small" id="newChat">New chat</button>
       </div>
     </div>
 
+    <!-- WRITE -->
+    <div class="panel" data-panel="write">
+      <div class="grid2">
+        <label class="field">What to write
+          <select id="wType">
+            <option>Email</option><option>Social media post</option><option>Blog / article</option><option>Report</option>
+            <option>Letter</option><option>Announcement</option><option>Proposal</option><option>Product or service description</option>
+            <option>Speech</option><option>Rewrite / improve my text</option><option>Other</option>
+          </select></label>
+        <label class="field">Tone
+          <select id="wTone"><option>Professional</option><option>Friendly</option><option>Persuasive</option><option>Formal</option><option>Simple and clear</option><option>Inspiring</option></select></label>
+        <label class="field">Length
+          <select id="wLen"><option value="short">Short</option><option value="medium" selected>Medium</option><option value="long">Long</option></select></label>
+        <label class="field">Language
+          <select id="wLang" class="langSel"></select></label>
+      </div>
+      <textarea id="wTopic" rows="5" placeholder="Describe what you need. For example: an email inviting volunteers to our food drive on Saturday 10am at the community centre. Or paste the text you want improved."></textarea>
+      <div class="row" style="margin-top:8px">
+        <label class="row" style="gap:6px;font-size:14px"><input type="checkbox" id="wUseFiles"> Use my ticked files as reference</label>
+        <span class="spacer"></span>
+        <button class="btn primary" id="wBtn">Write it</button>
+      </div>
+      <div class="output md" id="wOut"><span class="hint">Your text will appear here.</span></div>
+      <div class="outbar" data-for="wOut"></div>
+    </div>
+
+    <!-- TRANSLATE -->
+    <div class="panel" data-panel="translate">
+      <div class="grid2">
+        <label class="field">Translate
+          <select id="tSource"><option value="text">Text I paste below</option></select></label>
+        <label class="field">Into
+          <select id="tLang" class="langSel"></select></label>
+      </div>
+      <textarea id="tText" rows="6" placeholder="Paste the text to translate… (or pick one of your files above)"></textarea>
+      <div class="row" style="margin-top:8px">
+        <span class="hint" style="margin:0">Long documents are translated piece by piece. For spreadsheets, use the Excel tab.</span>
+        <span class="spacer"></span>
+        <button class="btn primary" id="tBtn">Translate</button>
+      </div>
+      <div class="progress" id="tProg"></div>
+      <div class="output md" id="tOut"><span class="hint">The translation will appear here.</span></div>
+      <div class="outbar" data-for="tOut"></div>
+    </div>
+
+    <!-- SUMMARISE -->
     <div class="panel" data-panel="summary">
-      <div class="row">
-        <select id="sumStyle">
-          <option value="bullet">Key points (bullets)</option>
-          <option value="short">Short paragraph</option>
-          <option value="exam">Exam revision sheet</option>
-          <option value="eli5">Explain like I'm 12</option>
-        </select>
-        <button class="btn primary" id="sumBtn">Summarise</button>
+      <div class="grid2">
+        <label class="field">Document
+          <select id="sSource"></select></label>
+        <label class="field">Style
+          <select id="sStyle">
+            <option value="bullets">Key points (bullets)</option>
+            <option value="exec">Executive summary</option>
+            <option value="detailed">Detailed summary by section</option>
+            <option value="actions">Action items & decisions</option>
+            <option value="simple">Explain in simple words</option>
+          </select></label>
+        <label class="field">Language
+          <select id="sLang" class="langSel"></select></label>
       </div>
-      <div class="output md" id="sumOut"><span class="hint">Your summary will appear here.</span></div>
-      <div class="meta" id="sumMeta"></div>
+      <div class="row">
+        <span class="hint" style="margin:0">Long documents are summarised in parts, then combined.</span>
+        <span class="spacer"></span>
+        <button class="btn primary" id="sBtn">Summarise</button>
+      </div>
+      <div class="progress" id="sProg"></div>
+      <div class="output md" id="sOut"><span class="hint">Upload a file on the left, then click Summarise.</span></div>
+      <div class="outbar" data-for="sOut"></div>
     </div>
 
-    <div class="panel" data-panel="quiz">
-      <div class="row">
-        <label class="row" style="gap:6px">Questions <input type="number" id="quizN" min="3" max="10" value="5" style="width:70px"></label>
-        <select id="quizLevel"><option>easy</option><option selected>medium</option><option>hard</option></select>
-        <button class="btn primary" id="quizBtn">Make quiz</button>
+    <!-- EXCEL -->
+    <div class="panel" data-panel="excel">
+      <div class="grid2">
+        <label class="field">Spreadsheet
+          <select id="xFile"></select></label>
+        <label class="field">Sheet
+          <select id="xSheet"></select></label>
       </div>
-      <div id="quizOut"></div>
-      <div class="meta" id="quizMeta"></div>
+      <div class="hint" id="xInfo">Upload an Excel or CSV file on the left to start.</div>
+      <div class="tablewrap hidden" id="xPreviewWrap"><table class="data" id="xPreview"></table></div>
+
+      <div class="section-title">❓ Ask about this data</div>
+      <div class="composer" style="margin-top:0">
+        <textarea id="xQ" placeholder="e.g. Which region had the highest sales? What is the total for March? Any unusual entries?"></textarea>
+        <button class="btn primary" id="xAskBtn">Ask</button>
+      </div>
+      <div class="output md hidden" id="xAnswer"></div>
+      <div class="outbar" data-for="xAnswer"></div>
+
+      <div class="section-title">🛠️ Change the data (AI edits every row, you download a new Excel file)</div>
+      <textarea id="xEdit" rows="2" placeholder="e.g. Translate the Product column into Urdu. Or: add a column 'Category' that classifies each row. Or: fix spelling and capitalisation in all names."></textarea>
+      <div class="row" style="margin-top:8px">
+        <button class="btn small" data-xq="Translate all text cells into English. Keep numbers, dates and the header row's meaning unchanged.">Translate to English</button>
+        <button class="btn small" data-xq="Add a new last column called 'Category' that classifies each row into a short, sensible category.">Add a Category column</button>
+        <button class="btn small" data-xq="Fix spelling, extra spaces and capitalisation in all text cells. Do not change numbers.">Clean up text</button>
+        <button class="btn small" data-xq="Add a new last column called 'Summary' with a one-sentence summary of each row.">Add a Summary column</button>
+        <span class="spacer"></span>
+        <button class="btn primary" id="xEditBtn">Apply to all rows</button>
+      </div>
+      <div class="progress" id="xProg"></div>
+      <div class="tablewrap hidden" id="xResultWrap"><table class="data" id="xResult"></table></div>
+      <div class="row hidden" id="xResultBar" style="margin-top:8px">
+        <button class="btn primary small" id="xDlXlsx">⬇️ Download Excel (.xlsx)</button>
+        <button class="btn small" id="xDlCsv">⬇️ Download CSV</button>
+        <button class="btn small" id="xKeep">➕ Add result to my files</button>
+      </div>
     </div>
 
-    <div class="panel" data-panel="cards">
-      <div class="row">
-        <label class="row" style="gap:6px">Cards <input type="number" id="cardN" min="4" max="16" value="8" style="width:70px"></label>
-        <button class="btn primary" id="cardBtn">Make flashcards</button>
-        <span class="hint" style="margin:0">Click a card to flip it.</span>
-      </div>
-      <div class="cards" id="cardOut"></div>
-      <div class="meta" id="cardMeta"></div>
-    </div>
-
+    <!-- LOG -->
     <div class="panel" data-panel="log">
-      <p class="hint">Every AI request is logged here so you can judge whether the free API is good enough for the course: success rate, speed, and which provider answered.</p>
+      <p class="hint">Every AI request is logged here so you can see how well the free AI performs: success rate, speed and which provider answered.</p>
       <div class="stats" id="stats"></div>
       <div class="row" style="margin-bottom:10px">
         <button class="btn small" id="exportBtn">⬇️ Export CSV</button>
         <button class="btn small" id="resetLog">Clear log</button>
       </div>
-      <div class="tablewrap"><table>
+      <div style="overflow-x:auto"><table class="log">
         <thead><tr><th>Time</th><th>Task</th><th>Mode</th><th>Answered by</th><th>Seconds</th><th>Result</th></tr></thead>
         <tbody id="logBody"></tbody>
       </table></div>
@@ -235,7 +328,7 @@
 <dialog id="settings">
   <div class="dlg">
     <h3>Settings</h3>
-    <div class="notice info">Works without any signup: FreeLLMAPI turns on its no-key providers automatically. <b>For better and faster answers</b>, add one or more <b>free</b> keys below. Each takes about a minute to get and needs no credit card.</div>
+    <div class="notice info">Works without any signup: FreeLLMAPI turns on its no-key providers automatically. <b>For much faster and better answers</b>, add one or more <b>free</b> keys below. Each takes about a minute to get and needs no credit card.</div>
     <div id="keyRows"></div>
     <p class="hint" id="keyMsg"></p>
     <hr style="border:none;border-top:1px solid var(--border);margin:14px 0">
@@ -256,12 +349,18 @@
   'use strict';
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
-  const MAX_CHARS = 15000;
 
-  // ---------- safe storage (works even when the browser blocks it) ----------
+  const CONTEXT_BUDGET = 24000;   // characters of file content sent with a chat/write request
+  const CHUNK = 12000;            // characters per piece when summarising long documents
+  const T_CHUNK = 4000;           // characters per piece when translating
+  const ROW_BATCH = 40;           // spreadsheet rows per AI request when editing
+  const MAX_EDIT_ROWS = 2000;
+  const LANGS = ['English', 'Hindi', 'Urdu', 'Marathi', 'Arabic', 'Punjabi', 'Bengali', 'Persian', 'Turkish', 'French', 'Spanish', 'Portuguese', 'German', 'Italian', 'Dutch', 'Russian', 'Ukrainian', 'Chinese (Simplified)', 'Japanese', 'Korean', 'Indonesian', 'Malay', 'Swahili', 'Pashto', 'Sindhi', 'Tamil', 'Telugu'];
+
+  // ---------- safe storage ----------
   const store = {
     get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
-    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
   };
 
   // ---------- theme ----------
@@ -270,70 +369,27 @@
   $('#theme').value = store.get('theme', '');
   $('#theme').onchange = (e) => { store.set('theme', e.target.value); applyTheme(e.target.value); };
 
-  // ---------- material ----------
-  const material = $('#material');
-  material.value = store.get('material', '');
-  const updateCount = () => {
-    const n = material.value.length;
-    $('#count').textContent = `${n.toLocaleString()} characters` + (n > MAX_CHARS ? ` (only the first ${MAX_CHARS.toLocaleString()} are sent)` : '');
-  };
-  material.addEventListener('input', () => { store.set('material', material.value); updateCount(); });
-  updateCount();
-  const getMaterial = () => material.value.trim().slice(0, MAX_CHARS);
-
-  $('#clearBtn').onclick = () => { material.value = ''; store.set('material', ''); updateCount(); $('#fileInfo').textContent = ''; };
-  $('#sampleBtn').onclick = () => {
-    material.value = SAMPLE; store.set('material', SAMPLE); updateCount();
-    $('#fileInfo').textContent = 'Loaded sample lesson: Photosynthesis (Biology).';
-  };
-
-  $('#file').onchange = async (e) => {
-    const f = e.target.files[0]; if (!f) return;
-    const info = $('#fileInfo');
-    info.innerHTML = '<span class="spin"></span> Reading ' + esc(f.name) + '…';
-    try {
-      let text;
-      if (f.name.toLowerCase().endsWith('.pdf') || f.type === 'application/pdf') text = await readPdf(f);
-      else text = await f.text();
-      material.value = text.trim(); store.set('material', material.value); updateCount();
-      info.textContent = `Loaded ${f.name} (${text.length.toLocaleString()} characters).`;
-    } catch (err) {
-      info.textContent = 'Could not read that file: ' + err.message;
-    }
-    e.target.value = '';
-  };
-
-  async function readPdf(file) {
-    if (!window.pdfjsLib) {
-      await new Promise((ok, fail) => {
-        const s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-        s.onload = ok; s.onerror = () => fail(new Error('PDF reader needs an internet connection'));
-        document.head.appendChild(s);
-      });
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    }
-    const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
-    const pages = [];
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const c = await (await pdf.getPage(i)).getTextContent();
-      pages.push(c.items.map((it) => it.str).join(' '));
-      if (pages.join('\n').length > MAX_CHARS * 2) break;
-    }
-    const text = pages.join('\n\n');
-    if (!text.trim()) throw new Error('no text found (it may be a scanned PDF)');
-    return text;
-  }
-
-  // ---------- tabs ----------
-  $$('.tab').forEach((t) => t.onclick = () => {
-    $$('.tab').forEach((x) => x.setAttribute('aria-selected', String(x === t)));
-    $$('.panel').forEach((p) => p.classList.toggle('active', p.dataset.panel === t.dataset.tab));
-    if (t.dataset.tab === 'log') renderLog();
+  // ---------- small helpers ----------
+  function esc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  const fmtSize = (n) => n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(0) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
+  const uid = () => Math.random().toString(36).slice(2, 10);
+  const loadScript = (src) => new Promise((ok, fail) => {
+    const s = document.createElement('script'); s.src = src; s.onload = ok;
+    s.onerror = () => fail(new Error('Could not load the file reader (' + src + '). Re-run the installer.'));
+    document.head.appendChild(s);
   });
-
-  // ---------- helpers ----------
-  function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  const libs = {};
+  async function lib(name) {
+    if (!libs[name]) {
+      libs[name] = (async () => {
+        if (name === 'xlsx') { await loadScript('/vendor/xlsx.js'); return window.XLSX; }
+        if (name === 'mammoth') { await loadScript('/vendor/mammoth.js'); return window.mammoth; }
+        if (name === 'pdf') { await loadScript('/vendor/pdf.js'); window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdf.worker.js'; return window.pdfjsLib; }
+      })();
+      libs[name].catch(() => { delete libs[name]; });
+    }
+    return libs[name];
+  }
 
   // Tiny, safe markdown renderer: escapes everything first, then adds formatting.
   function md(src) {
@@ -343,28 +399,205 @@
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
       .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
-    const out = []; let list = null;
+    const out = []; let list = null; let table = null;
     const closeList = () => { if (list) { out.push(`</${list}>`); list = null; } };
+    const closeTable = () => { if (table) { out.push('<table>' + table.map((r, i) => '<tr>' + r.map((c) => i === 0 ? `<th>${inline(c)}</th>` : `<td>${inline(c)}</td>`).join('') + '</tr>').join('') + '</table>'); table = null; } };
     for (const line of s.split('\n')) {
       let m;
+      if (/^\s*\|.*\|\s*$/.test(line)) {
+        closeList();
+        if (/^\s*\|[\s:|-]+\|\s*$/.test(line)) continue;
+        (table ||= []).push(line.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim()));
+        continue;
+      }
+      closeTable();
       if (/^\u0000\d+\u0000$/.test(line.trim())) { closeList(); out.push(line.trim()); }
       else if ((m = line.match(/^\s*#{1,6}\s+(.*)$/))) { closeList(); out.push(`<h3>${inline(m[1])}</h3>`); }
       else if ((m = line.match(/^\s*[-*•]\s+(.*)$/))) { if (list !== 'ul') { closeList(); out.push('<ul>'); list = 'ul'; } out.push(`<li>${inline(m[1])}</li>`); }
       else if ((m = line.match(/^\s*\d+[.)]\s+(.*)$/))) { if (list !== 'ol') { closeList(); out.push('<ol>'); list = 'ol'; } out.push(`<li>${inline(m[1])}</li>`); }
+      else if (/^\s*-{3,}\s*$/.test(line)) { closeList(); out.push('<hr>'); }
       else if (!line.trim()) { closeList(); }
       else { closeList(); out.push(`<p>${inline(line)}</p>`); }
     }
-    closeList();
+    closeList(); closeTable();
     return out.join('').replace(/\u0000(\d+)\u0000/g, (_, i) => `<pre><code>${blocks[i]}</code></pre>`);
   }
 
+  // ---------- language selects ----------
+  $$('.langSel').forEach((sel) => {
+    sel.innerHTML = LANGS.map((l) => `<option>${l}</option>`).join('') + '<option value="__other">Other…</option>';
+    const key = 'lang:' + sel.id;
+    sel.value = store.get(key, sel.id === 'tLang' ? 'Hindi' : 'English');
+    sel.onchange = () => {
+      if (sel.value === '__other') {
+        const l = (prompt('Which language?') || '').trim();
+        if (l) { const o = document.createElement('option'); o.textContent = l; sel.insertBefore(o, sel.lastElementChild); sel.value = l; }
+        else sel.value = 'English';
+      }
+      store.set(key, sel.value);
+    };
+  });
+
+  // =====================================================================
+  // FILES
+  // =====================================================================
+  /** @type {{id:string,name:string,size:number,kind:'text'|'sheet',text?:string,sheets?:Record<string,string[][]>,on:boolean,err?:string}[]} */
+  let files = store.get('files', []);
+  const saveFiles = () => { if (!store.set('files', files)) store.set('files', []); };
+  const textFiles = () => files.filter((f) => !f.err);
+  const sheetFiles = () => files.filter((f) => f.kind === 'sheet' && !f.err);
+
+  function renderFiles() {
+    const ul = $('#fileList');
+    ul.innerHTML = files.map((f) => `
+      <li class="file ${f.err ? 'err' : ''}" data-id="${f.id}">
+        <input type="checkbox" ${f.on && !f.err ? 'checked' : ''} ${f.err ? 'disabled' : ''} title="Use this file in Chat / Write / Summarise">
+        <div style="min-width:0"><div class="name" title="${esc(f.name)}">${f.kind === 'sheet' ? '📊' : '📄'} ${esc(f.name)}</div>
+          <div class="info">${f.err ? esc(f.err) : fileInfo(f)}</div></div>
+        <button title="Remove">✕</button>
+      </li>`).join('');
+    $$('.file', ul).forEach((li) => {
+      const f = files.find((x) => x.id === li.dataset.id);
+      $('input', li).onchange = (e) => { f.on = e.target.checked; saveFiles(); updateCtx(); };
+      $('button', li).onclick = () => { files = files.filter((x) => x !== f); saveFiles(); renderFiles(); };
+    });
+    $('#fileCount').textContent = files.length ? `${files.length} file${files.length === 1 ? '' : 's'}` : '';
+    refreshSelectors(); updateCtx();
+  }
+  function fileInfo(f) {
+    if (f.kind === 'sheet') {
+      const names = Object.keys(f.sheets || {});
+      const rows = names.reduce((a, n) => a + Math.max(0, f.sheets[n].length - 1), 0);
+      return `${names.length} sheet${names.length === 1 ? '' : 's'} · ${rows.toLocaleString()} rows · ${fmtSize(f.size)}`;
+    }
+    return `${(f.text || '').length.toLocaleString()} characters · ${fmtSize(f.size)}`;
+  }
+
+  async function readFile(file) {
+    const name = file.name; const lower = name.toLowerCase(); const ext = lower.split('.').pop();
+    const base = { id: uid(), name, size: file.size, on: true };
+    try {
+      if (['xlsx', 'xls', 'xlsm', 'ods', 'csv', 'tsv'].includes(ext)) {
+        const XLSX = await lib('xlsx');
+        const wb = ext === 'csv' || ext === 'tsv'
+          ? XLSX.read(await file.text(), { type: 'string', raw: true, FS: ext === 'tsv' ? '\t' : undefined })
+          : XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
+        const sheets = {};
+        for (const sn of wb.SheetNames) {
+          const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: '', raw: false, blankrows: false })
+            .map((r) => r.map((c) => String(c ?? '')));
+          if (rows.length) sheets[sn] = rows;
+        }
+        if (!Object.keys(sheets).length) throw new Error('the spreadsheet is empty');
+        return { ...base, kind: 'sheet', sheets };
+      }
+      if (ext === 'docx') {
+        const mammoth = await lib('mammoth');
+        const r = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+        return { ...base, kind: 'text', text: r.value.trim() };
+      }
+      if (ext === 'pdf') {
+        const pdfjs = await lib('pdf');
+        const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+        const pages = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const c = await (await pdf.getPage(i)).getTextContent();
+          pages.push(c.items.map((it) => it.str).join(' '));
+        }
+        const text = pages.join('\n\n').trim();
+        if (!text) throw new Error('no text found (scanned PDFs are not supported yet)');
+        return { ...base, kind: 'text', text };
+      }
+      if (['doc', 'ppt', 'pptx'].includes(ext)) throw new Error('this format is not supported yet. Save it as .docx or .pdf');
+      if (/^image\//.test(file.type)) throw new Error('images are not supported yet');
+      let text = await file.text();
+      if (ext === 'html' || ext === 'htm') text = new DOMParser().parseFromString(text, 'text/html').body.innerText;
+      return { ...base, kind: 'text', text: text.trim() };
+    } catch (err) {
+      return { ...base, kind: 'text', on: false, err: 'Could not read: ' + err.message };
+    }
+  }
+
+  async function addFiles(list) {
+    const arr = [...list]; if (!arr.length) return;
+    const ul = $('#fileList');
+    ul.insertAdjacentHTML('afterbegin', `<li class="file" id="reading"><span class="spin"></span><div>Reading ${arr.length} file${arr.length === 1 ? '' : 's'}…</div><span></span></li>`);
+    for (const f of arr) {
+      if (f.size > 25 * 1024 * 1024) { files.unshift({ id: uid(), name: f.name, size: f.size, kind: 'text', on: false, err: 'File is larger than 25 MB' }); continue; }
+      files.unshift(await readFile(f));
+    }
+    saveFiles(); renderFiles();
+    const firstSheet = files.find((f) => f.kind === 'sheet' && !f.err);
+    if (firstSheet && arr.some((a) => a.name === firstSheet.name)) { $('#xFile').value = firstSheet.id; showSheet(); }
+  }
+  $('#fileInput').onchange = (e) => { addFiles(e.target.files); e.target.value = ''; };
+  const drop = $('#drop');
+  ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', (e) => addFiles(e.dataTransfer.files));
+  document.addEventListener('dragover', (e) => e.preventDefault());
+  document.addEventListener('drop', (e) => { e.preventDefault(); if (e.target.closest('#drop')) return; addFiles(e.dataTransfer.files); });
+  $('#clearFiles').onclick = () => { if (files.length && confirm('Remove all files from the list?')) { files = []; saveFiles(); renderFiles(); } };
+
+  // ---------- spreadsheet helpers ----------
+  const toNum = (v) => { const t = String(v).replace(/[,\s$€£₹%]|Rs\.?|PKR/gi, ''); return t !== '' && !isNaN(t) ? Number(t) : null; };
+  function columnStats(rows) {
+    const [head, ...body] = rows; if (!head) return '';
+    return head.map((h, i) => {
+      const vals = body.map((r) => r[i] ?? '').filter((v) => String(v).trim() !== '');
+      const nums = vals.map(toNum).filter((n) => n !== null);
+      let line = `- "${h || 'Column ' + (i + 1)}": ${vals.length} filled`;
+      if (nums.length && nums.length >= vals.length * 0.8) {
+        const sum = nums.reduce((a, b) => a + b, 0);
+        line += `, numeric: sum=${+sum.toFixed(4)}, average=${+(sum / nums.length).toFixed(4)}, min=${Math.min(...nums)}, max=${Math.max(...nums)}`;
+      } else {
+        const uniq = new Set(vals); line += `, ${uniq.size} distinct values`;
+        if (uniq.size <= 12) line += ` (${[...uniq].slice(0, 12).map((v) => JSON.stringify(String(v).slice(0, 40))).join(', ')})`;
+      }
+      return line;
+    }).join('\n');
+  }
+  const csvCell = (v) => { const s = String(v ?? ''); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const toCsv = (rows) => rows.map((r) => r.map(csvCell).join(',')).join('\n');
+
+  function sheetToContext(name, rows, budget) {
+    const head = `Sheet "${name}": ${Math.max(0, rows.length - 1)} data rows, ${rows[0]?.length || 0} columns.\nColumn statistics (computed exactly, trust these numbers):\n${columnStats(rows)}\nData (CSV):\n`;
+    let csv = ''; let n = 0;
+    for (const r of rows) { const line = r.map(csvCell).join(',') + '\n'; if (head.length + csv.length + line.length > budget) break; csv += line; n++; }
+    const note = n < rows.length ? `\n[Only the first ${n - 1} of ${rows.length - 1} rows are shown.]` : '';
+    return head + csv + note;
+  }
+
+  /** Builds the file context for Chat / Write: ticked files, trimmed to the budget. */
+  function filesContext(list, budget = CONTEXT_BUDGET) {
+    if (!list.length) return { text: '', truncated: false };
+    const per = Math.floor(budget / list.length); let truncated = false;
+    const parts = list.map((f) => {
+      if (f.kind === 'sheet') {
+        const names = Object.keys(f.sheets); const per2 = Math.floor(per / names.length);
+        return `### File: ${f.name} (spreadsheet)\n` + names.map((sn) => sheetToContext(sn, f.sheets[sn], per2)).join('\n\n');
+      }
+      let t = f.text || ''; if (t.length > per) { t = t.slice(0, per) + '\n[…document cut here because it is long…]'; truncated = true; }
+      return `### File: ${f.name}\n${t}`;
+    });
+    return { text: parts.join('\n\n'), truncated };
+  }
+  const tickedFiles = () => files.filter((f) => f.on && !f.err);
+  function updateCtx() {
+    const t = tickedFiles();
+    $('#chatCtx').textContent = t.length ? `📎 Using ${t.length} file${t.length === 1 ? '' : 's'}: ${t.map((f) => f.name).join(', ')}` : '📎 No files ticked: the chat answers from general knowledge.';
+  }
+
+  // =====================================================================
+  // AI CALLS + LOG
+  // =====================================================================
   const mode = () => $('#mode').value;
-  $('#mode').value = store.get('mode', 'auto');
+  $('#mode').value = store.get('mode', 'auto:fast');
+  if (!$('#mode').value) $('#mode').value = 'auto:fast';
   $('#mode').onchange = () => store.set('mode', mode());
 
-  // ---------- test log ----------
   let log = store.get('log', []);
-  function addLog(entry) { log.unshift(entry); log = log.slice(0, 300); store.set('log', log); renderLog(); }
+  function addLog(entry) { log.unshift(entry); log = log.slice(0, 500); store.set('log', log); if ($('[data-panel=log]').classList.contains('active')) renderLog(); }
   function renderLog() {
     const ok = log.filter((l) => l.ok);
     const avg = ok.length ? ok.reduce((a, l) => a + l.secs, 0) / ok.length : 0;
@@ -379,37 +612,33 @@
       <td>${esc(new Date(l.t).toLocaleTimeString())}</td><td>${esc(l.task)}</td><td class="mono">${esc(l.mode)}</td>
       <td class="mono">${esc(l.via || '—')}</td><td>${l.secs.toFixed(1)}</td>
       <td class="${l.ok ? 'ok-t' : 'bad-t'}" title="${esc(l.err || '')}">${l.ok ? '✓ ok' : '✗ ' + esc((l.err || 'failed').slice(0, 60))}</td></tr>`).join('')
-      : '<tr><td colspan="6" class="hint">No requests yet. Try the tutor, a summary or a quiz.</td></tr>';
+      : '<tr><td colspan="6" class="hint">No requests yet.</td></tr>';
   }
   $('#resetLog').onclick = () => { log = []; store.set('log', log); renderLog(); };
   $('#exportBtn').onclick = () => {
     const rows = [['time', 'task', 'mode', 'answered_by', 'seconds', 'ok', 'error']].concat(
       log.map((l) => [new Date(l.t).toISOString(), l.task, l.mode, l.via || '', l.secs.toFixed(2), l.ok, l.err || '']));
-    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = 'course-ai-test-log.csv'; a.click();
+    download('freellm-assistant-log.csv', new Blob([toCsv(rows)], { type: 'text/csv' }));
   };
-  renderLog();
 
-  // ---------- AI calls ----------
   async function errorText(res) {
     try {
       const j = await res.json();
       const m = j?.error?.message || '';
       if (res.status === 503 || /no models|no available|exhausted|All \d+ routed/i.test(m)) {
-        return 'No free AI provider could answer right now. ' + (m ? `(${m.slice(0, 220)})` : '') + ' Tip: add a free Gemini or Groq key in ⚙️ Settings.';
+        return 'No free AI provider could answer right now. ' + (m ? `(${m.slice(0, 200)})` : '') + ' Tip: add a free Gemini or Groq key in ⚙️ Settings.';
       }
+      if (res.status === 413) return 'Too much text in one request. Untick some files or use a shorter document.';
       if (res.status === 429) return 'Rate limited. Wait a minute and try again. ' + m;
       return m || `Error ${res.status}`;
     } catch { return `Error ${res.status}`; }
   }
 
-  /** Streams a chat completion; calls onText(fullTextSoFar). Returns {text, via, secs}. */
-  async function streamChat(messages, task, onText) {
+  /** Streams a chat completion; onText(fullTextSoFar). Returns {text, via, secs}. */
+  async function ai(messages, task, onText = () => {}, signal) {
     const t0 = performance.now(); const m = mode();
     try {
-      const res = await fetch('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model: m, messages, stream: true }) });
+      const res = await fetch('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model: m, messages, stream: true }), signal });
       const via = res.headers.get('x-routed-via') || '';
       if (!res.ok) throw new Error(await errorText(res));
       let text = '';
@@ -431,53 +660,89 @@
           }
         }
       }
+      text = text.replace(/^\s*<think>[\s\S]*?<\/think>\s*/i, '');
       if (!text.trim()) throw new Error('The AI returned an empty answer. Try again or switch AI mode.');
       const secs = (performance.now() - t0) / 1000;
       addLog({ t: Date.now(), task, mode: m, via, secs, ok: true });
       return { text, via, secs };
     } catch (err) {
-      addLog({ t: Date.now(), task, mode: m, via: '', secs: (performance.now() - t0) / 1000, ok: false, err: err.message });
+      if (err.name !== 'AbortError') addLog({ t: Date.now(), task, mode: m, via: '', secs: (performance.now() - t0) / 1000, ok: false, err: err.message });
       throw err;
     }
   }
-
-  async function completeChat(messages, task) {
-    let last = '';
-    return streamChat(messages, task, (t) => { last = t; });
-  }
-
-  function parseJson(text) {
-    let t = text.replace(/```(?:json)?/gi, '').trim();
-    const a = t.indexOf('{'), b = t.lastIndexOf('}');
-    if (a >= 0 && b > a) t = t.slice(a, b + 1);
-    return JSON.parse(t);
-  }
-
   const metaLine = (r) => `answered by ${r.via || 'unknown model'} · ${r.secs.toFixed(1)}s`;
-  const needMaterial = () => { if (!getMaterial()) { alert('Please paste some course material first (or click "Try a sample lesson").'); return true; } return false; };
   const busy = (btn, on, label) => { btn.disabled = on; if (on) { btn.dataset.l = btn.textContent; btn.innerHTML = '<span class="spin"></span> ' + (label || 'Working…'); } else btn.textContent = btn.dataset.l || btn.textContent; };
 
-  // ---------- chat ----------
-  let history = [];
+  // ---------- output toolbars: copy / download ----------
+  const outputs = {};
+  function setOutput(id, text, meta) {
+    outputs[id] = text;
+    const bar = $(`.outbar[data-for="${id}"]`);
+    bar.innerHTML = text ? `<button class="btn small" data-act="copy">📋 Copy</button>
+      <button class="btn small" data-act="doc">⬇️ Word (.doc)</button>
+      <button class="btn small" data-act="txt">⬇️ Text (.txt)</button>
+      <span class="meta" style="margin:0">${esc(meta || '')}</span>` : '';
+    $$('button', bar).forEach((b) => b.onclick = async () => {
+      const t = outputs[id];
+      if (b.dataset.act === 'copy') { try { await navigator.clipboard.writeText(t); b.textContent = '✓ Copied'; } catch { b.textContent = 'Copy failed'; } setTimeout(() => b.textContent = '📋 Copy', 1500); }
+      if (b.dataset.act === 'txt') download(`${NAMES[id] || id}-${stamp()}.txt`, new Blob([t], { type: 'text/plain;charset=utf-8' }));
+      if (b.dataset.act === 'doc') {
+        const html = `<html><head><meta charset="utf-8"></head><body style="font-family:Calibri,Arial,sans-serif">${md(t)}</body></html>`;
+        download(`${NAMES[id] || id}-${stamp()}.doc`, new Blob(['﻿', html], { type: 'application/msword' }));
+      }
+    });
+  }
+  const stamp = () => new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+  const NAMES = { wOut: 'written-text', tOut: 'translation', sOut: 'summary', xAnswer: 'data-answer' };
+  function download(name, blob) {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }
+
+  // =====================================================================
+  // TABS
+  // =====================================================================
+  $$('.tab').forEach((t) => t.onclick = () => {
+    $$('.tab').forEach((x) => x.setAttribute('aria-selected', String(x === t)));
+    $$('.panel').forEach((p) => p.classList.toggle('active', p.dataset.panel === t.dataset.tab));
+    store.set('tab', t.dataset.tab);
+    if (t.dataset.tab === 'log') renderLog();
+  });
+  const lastTab = $(`.tab[data-tab="${store.get('tab', 'chat')}"]`); if (lastTab) lastTab.click();
+
+  // =====================================================================
+  // CHAT
+  // =====================================================================
+  let history = store.get('chat', []);
   const chatlog = $('#chatlog');
   function addBubble(cls, html) {
     $('#chatEmpty')?.remove();
     const d = document.createElement('div'); d.className = 'msg ' + cls; d.innerHTML = html;
     chatlog.appendChild(d); chatlog.scrollTop = chatlog.scrollHeight; return d;
   }
+  function renderChat() {
+    chatlog.innerHTML = '<div class="empty" id="chatEmpty">Ask anything. Tick files on the left and the assistant will use them, for example <em>"What does this contract say about payment?"</em> or <em>"Which product sold the most?"</em></div>';
+    for (const m of history) {
+      if (m.role === 'user') addBubble('user', esc(m.content));
+      else addBubble('ai', `<div class="md">${md(m.content)}</div>${m.meta ? `<div class="meta">${esc(m.meta)}</div>` : ''}`);
+    }
+  }
+  renderChat();
   async function ask(q) {
     q = q.trim(); if (!q) return;
     const btn = $('#askBtn'); busy(btn, true, '');
     addBubble('user', esc(q));
-    const mat = getMaterial();
-    const system = 'You are a friendly, patient tutor helping a student with their course. Explain clearly, use short paragraphs and simple examples. ' +
-      (mat ? 'Base your answers on the COURSE MATERIAL below. If the answer is not in the material, say so and then answer from general knowledge.\n\nCOURSE MATERIAL:\n"""\n' + mat + '\n"""' : 'The student has not provided course material; answer from general knowledge.');
+    const ctx = filesContext(tickedFiles());
+    const system = 'You are a helpful, accurate assistant. Answer clearly with short paragraphs or bullet points. If the user writes in a language other than English, answer in that language.' +
+      (ctx.text ? '\n\nThe user has shared these files. Use them to answer, and say which file the information comes from. If the answer is not in the files, say so, then answer from general knowledge.\n\n' + ctx.text : '');
     history.push({ role: 'user', content: q });
     const bubble = addBubble('ai', '<span class="spin"></span>');
     try {
-      const r = await streamChat([{ role: 'system', content: system }, ...history.slice(-10)], 'Tutor chat', (t) => { bubble.innerHTML = `<div class="md">${md(t)}</div>`; chatlog.scrollTop = chatlog.scrollHeight; });
-      history.push({ role: 'assistant', content: r.text });
-      bubble.insertAdjacentHTML('beforeend', `<div class="meta">${esc(metaLine(r))}</div>`);
+      const r = await ai([{ role: 'system', content: system }, ...history.slice(-12).map(({ role, content }) => ({ role, content }))], 'Chat',
+        (t) => { bubble.innerHTML = `<div class="md">${md(t)}</div>`; chatlog.scrollTop = chatlog.scrollHeight; });
+      history.push({ role: 'assistant', content: r.text, meta: metaLine(r) + (ctx.truncated ? ' · long files were shortened' : '') });
+      bubble.insertAdjacentHTML('beforeend', `<div class="meta">${esc(history.at(-1).meta)}</div>`);
+      store.set('chat', history.slice(-50));
     } catch (err) {
       history.pop(); bubble.className = 'msg err'; bubble.textContent = err.message;
     } finally { busy(btn, false); }
@@ -485,109 +750,270 @@
   $('#askBtn').onclick = () => { const q = $('#question').value; $('#question').value = ''; ask(q); };
   $('#question').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#askBtn').click(); } });
   $$('[data-quick]').forEach((b) => b.onclick = () => ask(b.dataset.quick));
-  $('#newChat').onclick = () => { history = []; chatlog.innerHTML = '<div class="empty" id="chatEmpty">New chat started.</div>'; };
+  $('#newChat').onclick = () => { history = []; store.set('chat', history); renderChat(); };
 
-  // ---------- summary ----------
-  const SUM = {
-    bullet: 'Summarise the material as 6-10 clear bullet points covering the key ideas. Start with a one-line overview.',
-    short: 'Summarise the material in one clear paragraph of about 120 words.',
-    exam: 'Create an exam revision sheet: key terms with short definitions, the main concepts, any formulas or processes step by step, and 3 likely exam questions.',
-    eli5: 'Explain the material as if to a curious 12-year-old, using everyday comparisons. Keep it under 200 words.',
-  };
-  $('#sumBtn').onclick = async () => {
-    if (needMaterial()) return;
-    const btn = $('#sumBtn'); busy(btn, true); $('#sumMeta').textContent = '';
-    const out = $('#sumOut'); out.innerHTML = '<span class="spin"></span>';
+  // =====================================================================
+  // WRITE
+  // =====================================================================
+  const LEN = { short: 'Keep it short (about 80-150 words).', medium: 'Medium length (about 250-400 words).', long: 'Long and thorough (about 700-1000 words), with headings where useful.' };
+  $('#wBtn').onclick = async () => {
+    const topic = $('#wTopic').value.trim();
+    if (!topic) { $('#wTopic').focus(); return; }
+    const btn = $('#wBtn'); busy(btn, true); setOutput('wOut', '');
+    const out = $('#wOut'); out.innerHTML = '<span class="spin"></span>';
+    const type = $('#wType').value; const lang = $('#wLang').value;
+    const ctx = $('#wUseFiles').checked ? filesContext(tickedFiles()) : { text: '' };
+    const instr = type === 'Rewrite / improve my text'
+      ? `Rewrite and improve the text below so it reads well. Fix grammar and make it clear. Tone: ${$('#wTone').value}. ${LEN[$('#wLen').value]} Write it in ${lang}.\n\nTEXT:\n${topic}`
+      : `Write a ${type.toLowerCase()}. Tone: ${$('#wTone').value}. ${LEN[$('#wLen').value]} Write it in ${lang}.\n\nWhat it should be about:\n${topic}`;
     try {
-      const r = await streamChat([
-        { role: 'system', content: 'You are an expert teacher who writes clear study notes. Use markdown.' },
-        { role: 'user', content: SUM[$('#sumStyle').value] + '\n\nMATERIAL:\n"""\n' + getMaterial() + '\n"""' },
-      ], 'Summary', (t) => { out.innerHTML = md(t); });
-      $('#sumMeta').textContent = metaLine(r);
+      const r = await ai([
+        { role: 'system', content: 'You are an expert writer. Output only the finished text, ready to use (for emails include a subject line). Use markdown for headings and lists where it helps. Never invent facts, names or numbers that were not given: use placeholders like [Name] instead.' + (ctx.text ? '\n\nReference material from the user\'s files:\n' + ctx.text : '') },
+        { role: 'user', content: instr },
+      ], 'Write: ' + type, (t) => { out.innerHTML = md(t); });
+      setOutput('wOut', r.text, metaLine(r));
     } catch (err) { out.innerHTML = `<span class="bad-t">${esc(err.message)}</span>`; }
     finally { busy(btn, false); }
   };
 
-  // ---------- quiz ----------
-  async function jsonTask(task, prompt, check) {
-    const messages = [
-      { role: 'system', content: 'You are a teacher creating study material. Reply with ONLY valid JSON, no markdown fences, no commentary.' },
-      { role: 'user', content: prompt + '\n\nMATERIAL:\n"""\n' + getMaterial() + '\n"""' },
-    ];
-    let lastErr;
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const r = await completeChat(messages, task + (attempt ? ' (retry)' : ''));
-      try { const data = parseJson(r.text); if (check(data)) return { data, r }; lastErr = new Error('The AI answer was missing parts'); }
-      catch { lastErr = new Error('The AI did not return valid JSON'); }
+  // =====================================================================
+  // TRANSLATE
+  // =====================================================================
+  function splitText(text, size) {
+    const parts = []; let cur = '';
+    for (const para of text.split(/\n{2,}/)) {
+      if ((cur + '\n\n' + para).length > size && cur) { parts.push(cur); cur = ''; }
+      if (para.length > size) { for (let i = 0; i < para.length; i += size) parts.push(para.slice(i, i + size)); continue; }
+      cur = cur ? cur + '\n\n' + para : para;
     }
-    throw new Error(lastErr.message + '. Try again or pick "Smartest available" mode.');
+    if (cur) parts.push(cur);
+    return parts;
   }
-
-  $('#quizBtn').onclick = async () => {
-    if (needMaterial()) return;
-    const n = Math.min(10, Math.max(3, +$('#quizN').value || 5));
-    const btn = $('#quizBtn'); busy(btn, true); $('#quizMeta').textContent = '';
-    const out = $('#quizOut'); out.innerHTML = '<p class="hint"><span class="spin"></span> Writing questions…</p>';
+  function docText(f) {
+    if (f.kind === 'sheet') return Object.entries(f.sheets).map(([sn, rows]) => `Sheet ${sn}:\n` + toCsv(rows)).join('\n\n');
+    return f.text || '';
+  }
+  $('#tSource').onchange = () => { $('#tText').classList.toggle('hidden', $('#tSource').value !== 'text'); };
+  $('#tBtn').onclick = async () => {
+    const src = $('#tSource').value;
+    const f = files.find((x) => x.id === src);
+    const text = src === 'text' ? $('#tText').value.trim() : f ? docText(f) : '';
+    if (!text) { $('#tText').focus(); return; }
+    const lang = $('#tLang').value;
+    const parts = splitText(text, T_CHUNK);
+    const btn = $('#tBtn'); busy(btn, true); setOutput('tOut', '');
+    const out = $('#tOut'); out.innerHTML = '<span class="spin"></span>';
+    let done = ''; let last;
     try {
-      const { data, r } = await jsonTask('Quiz',
-        `Write ${n} ${$('#quizLevel').value} multiple-choice questions that test understanding of the material. ` +
-        'Return JSON exactly like {"questions":[{"question":"...","options":["A","B","C","D"],"answer":0,"explanation":"..."}]} where "answer" is the 0-based index of the correct option.',
-        (d) => Array.isArray(d.questions) && d.questions.length && d.questions.every((q) => q.question && Array.isArray(q.options) && q.options.length >= 2));
-      renderQuiz(data.questions);
-      $('#quizMeta').textContent = metaLine(r);
-    } catch (err) { out.innerHTML = `<p class="bad-t">${esc(err.message)}</p>`; }
+      for (let i = 0; i < parts.length; i++) {
+        $('#tProg').textContent = parts.length > 1 ? `Translating part ${i + 1} of ${parts.length}…` : '';
+        last = await ai([
+          { role: 'system', content: `You are a professional translator. Translate the user's text into ${lang}. Keep the meaning, tone, formatting, numbers and names. Output only the translation, nothing else.` },
+          { role: 'user', content: parts[i] },
+        ], `Translate → ${lang}` + (parts.length > 1 ? ` (${i + 1}/${parts.length})` : ''), (t) => { out.innerHTML = md(done + t); });
+        done += last.text.trim() + '\n\n';
+      }
+      $('#tProg').textContent = '';
+      setOutput('tOut', done.trim(), metaLine(last) + (parts.length > 1 ? ` · ${parts.length} parts` : ''));
+    } catch (err) {
+      $('#tProg').textContent = '';
+      out.innerHTML = (done ? md(done) : '') + `<p class="bad-t">${esc(err.message)}</p>`;
+      if (done) setOutput('tOut', done.trim(), 'stopped early');
+    } finally { busy(btn, false); }
+  };
+
+  // =====================================================================
+  // SUMMARISE
+  // =====================================================================
+  const STYLE = {
+    bullets: 'Summarise as 6-12 clear bullet points covering the key information. Start with a one-line overview.',
+    exec: 'Write an executive summary: a short overview paragraph, then key findings, risks and recommendations as bullets.',
+    detailed: 'Write a detailed summary organised by the document\'s main sections, with headings.',
+    actions: 'List the decisions, action items (who/what/when if stated), deadlines and open questions.',
+    simple: 'Explain what this document says in simple, everyday words that anyone can understand.',
+  };
+  $('#sBtn').onclick = async () => {
+    const f = files.find((x) => x.id === $('#sSource').value);
+    if (!f) { alert('Upload a document on the left first.'); return; }
+    const text = f.kind === 'sheet' ? filesContext([f], 30000).text : f.text;
+    const lang = $('#sLang').value; const style = STYLE[$('#sStyle').value];
+    const btn = $('#sBtn'); busy(btn, true); setOutput('sOut', '');
+    const out = $('#sOut'); out.innerHTML = '<span class="spin"></span>';
+    const sys = { role: 'system', content: 'You are an expert analyst who writes accurate, well-organised summaries in markdown. Only use information from the document.' };
+    try {
+      let material = text;
+      const parts = f.kind === 'sheet' ? [text] : splitText(text, CHUNK);
+      if (parts.length > 1) {
+        const notes = [];
+        for (let i = 0; i < parts.length; i++) {
+          $('#sProg').textContent = `Reading part ${i + 1} of ${parts.length}…`;
+          const r = await ai([sys, { role: 'user', content: `This is part ${i + 1} of ${parts.length} of the document "${f.name}". Write detailed notes of all key points, facts, numbers and decisions in this part.\n\n${parts[i]}` }], `Summarise part ${i + 1}/${parts.length}`);
+          notes.push(`Notes on part ${i + 1}:\n${r.text}`);
+        }
+        material = notes.join('\n\n');
+        $('#sProg').textContent = 'Combining the parts…';
+      }
+      const r = await ai([sys, { role: 'user', content: `${style} Write it in ${lang}.\n\nDOCUMENT "${f.name}"${parts.length > 1 ? ' (notes from each part)' : ''}:\n${material}` }], 'Summarise', (t) => { out.innerHTML = md(t); });
+      $('#sProg').textContent = '';
+      setOutput('sOut', r.text, metaLine(r) + (parts.length > 1 ? ` · read in ${parts.length} parts` : ''));
+    } catch (err) { $('#sProg').textContent = ''; out.innerHTML = `<span class="bad-t">${esc(err.message)}</span>`; }
     finally { busy(btn, false); }
   };
 
-  function renderQuiz(qs) {
-    const out = $('#quizOut'); out.innerHTML = '';
-    let answered = 0, right = 0;
-    const score = document.createElement('div'); score.className = 'score';
-    qs.forEach((q, qi) => {
-      const correct = Math.max(0, Math.min(q.options.length - 1, Number(q.answer) || 0));
-      const box = document.createElement('div'); box.className = 'quiz-q';
-      box.innerHTML = `<div class="q">${qi + 1}. ${esc(q.question)}</div>`;
-      q.options.forEach((o, oi) => {
-        const b = document.createElement('button'); b.className = 'opt'; b.textContent = `${'ABCDEFG'[oi] || oi + 1}. ${o}`;
-        b.onclick = () => {
-          $$('.opt', box).forEach((x, xi) => { x.disabled = true; if (xi === correct) x.classList.add('right'); });
-          if (oi !== correct) b.classList.add('wrong'); else right++;
-          answered++;
-          if (q.explanation) box.insertAdjacentHTML('beforeend', `<div class="explain">💡 ${esc(q.explanation)}</div>`);
-          score.textContent = answered === qs.length ? `🎯 Final score: ${right} / ${qs.length}` : `Score so far: ${right} / ${answered}`;
-        };
-        box.appendChild(b);
-      });
-      out.appendChild(box);
-    });
-    out.appendChild(score);
+  // =====================================================================
+  // EXCEL / DATA
+  // =====================================================================
+  function refreshSelectors() {
+    const tf = textFiles();
+    const keepS = $('#sSource').value, keepT = $('#tSource').value, keepX = $('#xFile').value;
+    $('#sSource').innerHTML = tf.length ? tf.map((f) => `<option value="${f.id}">${esc(f.name)}</option>`).join('') : '<option value="">(no files yet)</option>';
+    if (tf.some((f) => f.id === keepS)) $('#sSource').value = keepS;
+    $('#tSource').innerHTML = '<option value="text">Text I paste below</option>' + tf.map((f) => `<option value="${f.id}">File: ${esc(f.name)}</option>`).join('');
+    $('#tSource').value = tf.some((f) => f.id === keepT) ? keepT : 'text';
+    $('#tText').classList.toggle('hidden', $('#tSource').value !== 'text');
+    const sf = sheetFiles();
+    $('#xFile').innerHTML = sf.length ? sf.map((f) => `<option value="${f.id}">${esc(f.name)}</option>`).join('') : '<option value="">(upload an Excel or CSV file)</option>';
+    if (sf.some((f) => f.id === keepX)) $('#xFile').value = keepX;
+    showSheet();
   }
+  const curSheetFile = () => files.find((f) => f.id === $('#xFile').value && f.kind === 'sheet');
+  function curRows() { const f = curSheetFile(); return f ? f.sheets[$('#xSheet').value] || null : null; }
+  function tableHtml(rows, limit = 100) {
+    if (!rows?.length) return '';
+    const [head, ...body] = rows; const width = Math.max(...rows.slice(0, limit + 1).map((r) => r.length));
+    const cells = (r, tag) => Array.from({ length: width }, (_, i) => `<${tag} title="${esc(r[i] ?? '')}">${esc(r[i] ?? '')}</${tag}>`).join('');
+    return `<thead><tr><th class="n">#</th>${cells(head, 'th')}</tr></thead><tbody>` +
+      body.slice(0, limit).map((r, i) => `<tr><td class="n">${i + 1}</td>${cells(r, 'td')}</tr>`).join('') + '</tbody>';
+  }
+  let lastSheetKey = '';
+  function showSheet() {
+    const f = curSheetFile();
+    const names = f ? Object.keys(f.sheets) : [];
+    const keep = $('#xSheet').value;
+    $('#xSheet').innerHTML = names.map((n) => `<option>${esc(n)}</option>`).join('');
+    if (names.includes(keep)) $('#xSheet').value = keep;
+    const rows = curRows();
+    $('#xPreviewWrap').classList.toggle('hidden', !rows);
+    if (!rows) { $('#xInfo').textContent = 'Upload an Excel or CSV file on the left to start (or click "Add sample files").'; return; }
+    $('#xInfo').textContent = `${(rows.length - 1).toLocaleString()} rows × ${rows[0].length} columns` + (rows.length > 101 ? ' · showing the first 100 rows' : '');
+    $('#xPreview').innerHTML = tableHtml(rows);
+    const key = f.id + '|' + $('#xSheet').value;
+    if (key !== lastSheetKey) { lastSheetKey = key; $('#xResultWrap').classList.add('hidden'); $('#xResultBar').classList.add('hidden'); $('#xProg').textContent = ''; }
+  }
+  $('#xFile').onchange = showSheet; $('#xSheet').onchange = showSheet;
 
-  // ---------- flashcards ----------
-  $('#cardBtn').onclick = async () => {
-    if (needMaterial()) return;
-    const n = Math.min(16, Math.max(4, +$('#cardN').value || 8));
-    const btn = $('#cardBtn'); busy(btn, true); $('#cardMeta').textContent = '';
-    const out = $('#cardOut'); out.innerHTML = '<p class="hint"><span class="spin"></span> Making cards…</p>';
+  $('#xAskBtn').onclick = async () => {
+    const rows = curRows(); const q = $('#xQ').value.trim();
+    if (!rows) { alert('Upload an Excel or CSV file first.'); return; }
+    if (!q) { $('#xQ').focus(); return; }
+    const btn = $('#xAskBtn'); busy(btn, true, ''); setOutput('xAnswer', '');
+    const out = $('#xAnswer'); out.classList.remove('hidden'); out.innerHTML = '<span class="spin"></span>';
     try {
-      const { data, r } = await jsonTask('Flashcards',
-        `Create ${n} study flashcards for the key terms and ideas. Return JSON exactly like {"cards":[{"front":"term or question","back":"short answer"}]}.`,
-        (d) => Array.isArray(d.cards) && d.cards.length && d.cards.every((c) => c.front && c.back));
-      out.innerHTML = '';
-      data.cards.forEach((c) => {
-        const el = document.createElement('div'); el.className = 'flash'; el.tabIndex = 0;
-        const show = (back) => { el.classList.toggle('flipped', back); el.innerHTML = `<div class="side">${back ? 'Answer' : 'Question'}</div><div>${esc(back ? c.back : c.front)}</div>`; };
-        let back = false; show(false);
-        el.onclick = () => show(back = !back);
-        el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(back = !back); } };
-        out.appendChild(el);
-      });
-      $('#cardMeta').textContent = metaLine(r);
-    } catch (err) { out.innerHTML = `<p class="bad-t">${esc(err.message)}</p>`; }
+      const r = await ai([
+        { role: 'system', content: 'You are a careful data analyst. Answer questions about the spreadsheet below. Use the provided column statistics for totals and averages instead of adding numbers yourself. If only part of the data is shown, say so. Use markdown tables when helpful.\n\n' + sheetToContext($('#xSheet').value, rows, 30000) },
+        { role: 'user', content: q },
+      ], 'Excel question', (t) => { out.innerHTML = md(t); });
+      setOutput('xAnswer', r.text, metaLine(r));
+    } catch (err) { out.innerHTML = `<span class="bad-t">${esc(err.message)}</span>`; }
     finally { busy(btn, false); }
   };
+  $('#xQ').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#xAskBtn').click(); } });
+  $$('[data-xq]').forEach((b) => b.onclick = () => { $('#xEdit').value = b.dataset.xq; $('#xEdit').focus(); });
 
-  // ---------- status + settings ----------
+  async function parseCsvReply(text) {
+    const XLSX = await lib('xlsx');
+    const m = text.match(/```(?:csv)?\s*\n([\s\S]*?)```/i);
+    const csv = (m ? m[1] : text).trim();
+    const wb = XLSX.read(csv, { type: 'string', raw: true });
+    return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '', raw: true, blankrows: false }).map((r) => r.map((c) => String(c ?? '')));
+  }
+
+  let xResult = null;
+  $('#xEditBtn').onclick = async () => {
+    const rows = curRows(); const instr = $('#xEdit').value.trim();
+    if (!rows) { alert('Upload an Excel or CSV file first.'); return; }
+    if (!instr) { $('#xEdit').focus(); return; }
+    const [head, ...body] = rows;
+    if (body.length > MAX_EDIT_ROWS && !confirm(`This sheet has ${body.length} rows. Only the first ${MAX_EDIT_ROWS} will be processed (about ${Math.ceil(MAX_EDIT_ROWS / ROW_BATCH)} AI requests). Continue?`)) return;
+    const work = body.slice(0, MAX_EDIT_ROWS);
+    const batches = []; for (let i = 0; i < work.length; i += ROW_BATCH) batches.push(work.slice(i, i + ROW_BATCH));
+    const btn = $('#xEditBtn'); busy(btn, true);
+    $('#xResultBar').classList.add('hidden');
+    let newHead = null; const outRows = []; let problems = 0;
+    try {
+      for (let b = 0; b < batches.length; b++) {
+        $('#xProg').innerHTML = `<span class="spin"></span> Processing rows ${b * ROW_BATCH + 1}–${b * ROW_BATCH + batches[b].length} of ${work.length} (batch ${b + 1} of ${batches.length})…`;
+        const input = toCsv([head, ...batches[b]]);
+        const messages = [
+          { role: 'system', content: 'You edit spreadsheet data. You receive CSV with a header row. Apply the instruction to every row and reply with ONLY the complete resulting CSV (header row first) inside one ```csv code block. Keep exactly the same number of data rows, in the same order. Use the same header for every batch. Quote cells that contain commas.' },
+          { role: 'user', content: `Instruction: ${instr}\n\nCSV (${batches[b].length} data rows):\n\`\`\`csv\n${input}\n\`\`\`` },
+        ];
+        let got = null;
+        for (let attempt = 0; attempt < 2 && !got; attempt++) {
+          const r = await ai(messages, `Excel edit ${b + 1}/${batches.length}` + (attempt ? ' (retry)' : ''));
+          const parsed = await parseCsvReply(r.text);
+          if (parsed.length - 1 === batches[b].length) got = parsed;
+          else if (attempt === 1 && parsed.length > 1) { got = parsed; problems++; }
+        }
+        if (!got) throw new Error(`Batch ${b + 1} did not come back as a table. Try again or pick "Smartest available" mode.`);
+        if (!newHead) newHead = got[0];
+        outRows.push(...got.slice(1));
+        xResult = [newHead, ...outRows];
+        $('#xResultWrap').classList.remove('hidden'); $('#xResult').innerHTML = tableHtml(xResult);
+      }
+      $('#xProg').innerHTML = `<span class="ok-t">✓ Done: ${outRows.length} rows processed.</span>` +
+        (problems ? ` <span class="warn-t">${problems} batch(es) came back with a different number of rows; please check the result.</span>` : '') +
+        (body.length > MAX_EDIT_ROWS ? ` <span class="warn-t">Only the first ${MAX_EDIT_ROWS} rows were processed.</span>` : '');
+      $('#xResultBar').classList.remove('hidden');
+    } catch (err) {
+      $('#xProg').innerHTML = `<span class="bad-t">${esc(err.message)}</span>` + (outRows.length ? ` <span class="hint">${outRows.length} rows finished; you can still download them.</span>` : '');
+      if (outRows.length) $('#xResultBar').classList.remove('hidden');
+    } finally { busy(btn, false); }
+  };
+  const baseName = () => (curSheetFile()?.name || 'data').replace(/\.[^.]+$/, '');
+  $('#xDlXlsx').onclick = async () => {
+    const XLSX = await lib('xlsx');
+    const typed = xResult.map((r, i) => i === 0 ? r : r.map((c) => (/^-?\d+(\.\d+)?$/.test(c.trim()) && c.trim().length < 16 ? Number(c) : c)));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(typed), ($('#xSheet').value || 'Sheet1').slice(0, 31));
+    XLSX.writeFile(wb, `${baseName()}-edited.xlsx`);
+  };
+  $('#xDlCsv').onclick = () => download(`${baseName()}-edited.csv`, new Blob(['﻿' + toCsv(xResult)], { type: 'text/csv;charset=utf-8' }));
+  $('#xKeep').onclick = () => {
+    files.unshift({ id: uid(), name: `${baseName()}-edited.xlsx`, size: toCsv(xResult).length, kind: 'sheet', sheets: { [$('#xSheet').value || 'Sheet1']: xResult }, on: true });
+    saveFiles(); renderFiles(); $('#xFile').value = files[0].id; showSheet();
+  };
+
+  // =====================================================================
+  // SAMPLE FILES
+  // =====================================================================
+  $('#sampleBtn').onclick = () => {
+    const sales = [['Date', 'Region', 'Product', 'Units', 'Revenue']];
+    const regions = ['North', 'South', 'East', 'West']; const products = ['Water filter', 'Solar lamp', 'School kit', 'First-aid box'];
+    for (let i = 0; i < 24; i++) {
+      const units = 5 + ((i * 37) % 40);
+      sales.push([`2026-${String(1 + (i % 6)).padStart(2, '0')}-${String(3 + i).padStart(2, '0')}`, regions[i % 4], products[(i * 3) % 4], String(units), String(units * [25, 18, 12, 30][(i * 3) % 4])]);
+    }
+    const memo = `Community Project Update — October
+
+Summary: The water-filter programme reached 1,240 households across four districts this quarter, 18% above target. Volunteer numbers grew from 45 to 72.
+
+Challenges: Delivery to the East district was delayed by two weeks because of road repairs. Solar lamp stock is low and must be re-ordered before 15 November.
+
+Decisions: The board approved a budget of $12,000 for the winter school-kit drive. Sara Khan will coordinate volunteers; Ahmed Ali will handle suppliers.
+
+Next steps:
+1. Re-order 300 solar lamps by 15 November (Ahmed).
+2. Recruit 20 more volunteers for the school-kit drive (Sara).
+3. Publish the quarterly report on the website by 30 November.`;
+    files.unshift({ id: uid(), name: 'project-update.txt', size: memo.length, kind: 'text', text: memo, on: true });
+    files.unshift({ id: uid(), name: 'sales-2026.xlsx', size: toCsv(sales).length, kind: 'sheet', sheets: { Sales: sales }, on: true });
+    saveFiles(); renderFiles(); $('#xFile').value = files[0].id; showSheet();
+  };
+
+  // =====================================================================
+  // STATUS + SETTINGS
+  // =====================================================================
   const PROVIDERS = [
     ['google', 'Google Gemini', 'https://aistudio.google.com/apikey'],
     ['groq', 'Groq (very fast)', 'https://console.groq.com/keys'],
@@ -620,7 +1046,7 @@
     try {
       const s = await (await fetch('/api/status')).json();
       $('#dashLink').href = s.dashboardUrl; $('#dashEmail').textContent = s.dashboardEmail || '—'; $('#dashPass').textContent = s.dashboardPassword || '—';
-      if (!s.freellmapi) { pill.className = 'pill bad'; txt.textContent = 'FreeLLMAPI not running'; warn.classList.remove('hidden'); warn.textContent = 'The FreeLLMAPI router is not running. Run ~/CourseAI/start.sh (or double-click "Course AI" on your Desktop).'; return; }
+      if (!s.freellmapi) { pill.className = 'pill bad'; txt.textContent = 'FreeLLMAPI not running'; warn.classList.remove('hidden'); warn.textContent = 'The FreeLLMAPI router is not running. Double-click "FreeLLM Assistant" on your Desktop (or run ~/FreeLLM-Assistant/start.sh).'; return; }
       if (!s.models) {
         pill.className = 'pill warn'; txt.textContent = 'No AI models yet';
         warn.classList.remove('hidden');
@@ -633,27 +1059,10 @@
       }
     } catch { pill.className = 'pill bad'; txt.textContent = 'App server offline'; }
   }
+
+  renderFiles();
+  renderLog();
   refreshStatus(); setInterval(refreshStatus, 20000);
-
-  const SAMPLE = `Photosynthesis — Biology, Unit 3
-
-Photosynthesis is the process by which green plants, algae and some bacteria convert light energy into chemical energy stored in glucose. It takes place mainly in the chloroplasts of leaf cells, which contain the green pigment chlorophyll.
-
-Overall equation:
-6CO2 + 6H2O + light energy → C6H12O6 + 6O2
-
-Stage 1 — Light-dependent reactions (thylakoid membranes):
-- Chlorophyll absorbs light, mostly red and blue wavelengths.
-- Water molecules are split (photolysis), releasing oxygen as a by-product.
-- The energy is used to make ATP and NADPH.
-
-Stage 2 — Light-independent reactions / Calvin cycle (stroma):
-- The enzyme RuBisCO fixes carbon dioxide onto RuBP.
-- ATP and NADPH from stage 1 are used to turn the fixed carbon into glucose (G3P).
-
-Limiting factors: light intensity, carbon dioxide concentration and temperature. Increasing one factor raises the rate only until another factor becomes limiting. Very high temperatures denature enzymes and reduce the rate.
-
-Importance: photosynthesis produces the oxygen most living things need, forms the base of almost every food chain, and removes carbon dioxide from the atmosphere.`;
 })();
 </script>
 </body>

@@ -1,4 +1,4 @@
-// Course AI Study Buddy — local web app that talks to a FreeLLMAPI router.
+// FreeLLM Assistant — local web app that talks to a FreeLLMAPI router.
 //
 // Zero npm dependencies: only Node built-ins. It serves the single-page UI and
 // forwards AI requests to FreeLLMAPI, so the browser never sees any API key.
@@ -11,16 +11,25 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const PORT = Number(process.env.COURSEAI_PORT || 3100);
+const PORT = Number(process.env.APP_PORT || 3100);
 const HOST = '127.0.0.1';
 const FREELLMAPI_URL = (process.env.FREELLMAPI_URL || 'http://127.0.0.1:3001').replace(/\/+$/, '');
 const FREELLMAPI_DIR = process.env.FREELLMAPI_DIR || '';
 const DB_PATH = process.env.FREEAPI_DB_PATH || '';
-const ADMIN_EMAIL = process.env.COURSEAI_ADMIN_EMAIL || '';
-const ADMIN_PASSWORD = process.env.COURSEAI_ADMIN_PASSWORD || '';
-const MAX_BODY = 8 * 1024 * 1024;
+const ADMIN_EMAIL = process.env.APP_ADMIN_EMAIL || '';
+const ADMIN_PASSWORD = process.env.APP_ADMIN_PASSWORD || '';
+const MAX_BODY = 20 * 1024 * 1024;
 
 const INDEX_HTML = path.join(HERE, 'public', 'index.html');
+
+// Browser libraries for reading files, installed into app/node_modules by the
+// installer and served locally (no CDN needed). Fixed whitelist: nothing else is served.
+const VENDOR = {
+  'xlsx.js': 'xlsx/dist/xlsx.full.min.js',
+  'mammoth.js': 'mammoth/mammoth.browser.min.js',
+  'pdf.js': 'pdfjs-dist/build/pdf.min.js',
+  'pdf.worker.js': 'pdfjs-dist/build/pdf.worker.min.js',
+};
 
 // Providers students can add a free key for from the Settings panel.
 const KEY_PLATFORMS = new Set(['google', 'groq', 'cerebras', 'openrouter', 'mistral', 'cohere', 'nvidia', 'cloudflare', 'huggingface']);
@@ -47,7 +56,7 @@ function readUnifiedKey() {
       db.close();
     }
   } catch (err) {
-    console.error('[courseai] could not read the unified key:', err.message);
+    console.error('[assistant] could not read the unified key:', err.message);
     return '';
   }
 }
@@ -229,7 +238,7 @@ async function handleAddKey(req, res) {
   if (!KEY_PLATFORMS.has(platform)) return sendJson(res, 400, { error: { message: 'Unknown provider' } });
   if (key.length < 8) return sendJson(res, 400, { error: { message: 'That key looks too short' } });
   try {
-    const r = await dashboardFetch('/api/keys', { method: 'POST', body: JSON.stringify({ platform, key, label: 'added from Study Buddy' }) });
+    const r = await dashboardFetch('/api/keys', { method: 'POST', body: JSON.stringify({ platform, key, label: 'added from FreeLLM Assistant' }) });
     const out = await r.json().catch(() => ({}));
     if (!r.ok) return sendJson(res, r.status, { error: { message: out?.error?.message || `Could not add key (${r.status})` } });
     sendJson(res, 200, { ok: true, platform, modelsAvailable: out.modelsAvailable ?? null, maskedKey: out.maskedKey ?? '' });
@@ -254,6 +263,13 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
       return res.end(html);
     }
+    if (req.method === 'GET' && url.pathname.startsWith('/vendor/')) {
+      const rel = VENDOR[url.pathname.slice('/vendor/'.length)];
+      const file = rel && path.join(HERE, 'node_modules', rel);
+      if (!file || !fs.existsSync(file)) return sendJson(res, 404, { error: { message: 'File reader library missing. Re-run the installer.' } });
+      res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'max-age=86400' });
+      return fs.createReadStream(file).pipe(res);
+    }
     if (req.method === 'GET' && url.pathname === '/api/health') return sendJson(res, 200, { ok: true });
     if (req.method === 'GET' && url.pathname === '/api/status') return await handleStatus(res);
     if (req.method === 'POST' && url.pathname === '/api/chat') return await handleChat(req, res);
@@ -268,7 +284,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`[courseai] Study Buddy running at http://${HOST}:${PORT} (FreeLLMAPI: ${FREELLMAPI_URL})`);
+  console.log(`[assistant] FreeLLM Assistant running at http://${HOST}:${PORT} (FreeLLMAPI: ${FREELLMAPI_URL})`);
   // Best effort: make sure the no-key providers are on, so it works with zero signups.
-  setTimeout(() => { enableFreeProviders().then((e) => e.length && console.log(`[courseai] enabled free no-key providers: ${e.join(', ')}`)); }, 1500);
+  setTimeout(() => { enableFreeProviders().then((e) => e.length && console.log(`[assistant] enabled free no-key providers: ${e.join(', ')}`)); }, 1500);
 });

@@ -1,0 +1,10 @@
+{
+  "name": "freellm-assistant-app",
+  "private": true,
+  "description": "Browser file readers served locally by app/server.mjs",
+  "dependencies": {
+    "mammoth": "1.13.0",
+    "pdfjs-dist": "3.11.174",
+    "xlsx": "0.18.5"
+  }
+}

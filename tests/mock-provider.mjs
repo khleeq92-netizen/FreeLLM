@@ -7,6 +7,14 @@ const PORT = Number(process.env.MOCK_PORT || 4010);
 
 function answerFor(messages) {
   const last = String(messages.at(-1)?.content || '');
+  const system = String(messages[0]?.content || '');
+  if (/You edit spreadsheet data/.test(system)) {
+    // Echo the CSV back with an extra "Category" column, like a real model would.
+    const csv = (last.match(/```csv\n([\s\S]*?)\n```/) || [])[1] || '';
+    const lines = csv.split('\n').filter(Boolean);
+    return '```csv\n' + lines.map((l, i) => l + (i === 0 ? ',Category' : ',Test category')).join('\n') + '\n```';
+  }
+  if (/professional translator/.test(system)) return '[TRANSLATED] ' + last.slice(0, 200);
   if (/"questions"/.test(last)) return JSON.stringify({ questions: [
     { question: 'Where does photosynthesis mainly happen?', options: ['Mitochondria', 'Chloroplasts', 'Nucleus', 'Ribosomes'], answer: 1, explanation: 'Chloroplasts contain chlorophyll.' },
     { question: 'Which gas is released?', options: ['Oxygen', 'Nitrogen', 'CO2', 'Hydrogen'], answer: 0, explanation: 'Water splitting releases O2.' },

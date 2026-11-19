@@ -1,14 +1,17 @@
-# 📚 Course AI Study Buddy
+# 🤖 FreeLLM Assistant
 
-A free AI study helper for students that runs on your own Mac. Paste course notes (or load a PDF) and get:
+A personal AI assistant that runs on your own Mac and uses **free** AI models. Upload your files and it can:
 
-- 💬 **Ask the tutor**: a chat that answers questions using your course material
-- 📝 **Summary**: key points, a short paragraph, an exam revision sheet, or "explain like I'm 12"
-- ❓ **Quiz**: interactive multiple-choice questions with scoring and explanations
-- 🃏 **Flashcards**: cards you click to flip
-- 📊 **Test log**: success rate, speed and which AI answered each request, exportable to CSV. Use it to judge whether the free API is good enough for your course.
+- 💬 **Chat**: answer questions using the files you tick (Excel, Word, PDF, text)
+- ✍️ **Write**: emails, notices, letters, posts, reports, proposals, or rewrite your text, in any tone, length and language
+- 🌐 **Translate**: pasted text or whole documents (English, Hindi, Urdu, Marathi, Arabic and 20+ more)
+- 📄 **Summarise**: key points, an executive summary, action items, or simple words; long documents are read in parts
+- 📊 **Excel / Data**: preview a spreadsheet, ask questions about it, or have the AI edit every row (translate a column, add a category, clean up text) and download a new **.xlsx**
+- 📈 **Log**: success rate, speed and which AI answered each request
 
-It costs nothing to run. Behind the scenes it uses **[FreeLLMAPI](https://github.com/tashfeenahmed/freellmapi)**, an open-source router that combines the free tiers of many AI providers (Google Gemini, Groq, Cerebras, Mistral, OpenRouter and more). If one provider is busy or out of free quota, it moves on to the next one automatically.
+Results can be copied or downloaded as Word (.doc) or text. Your files, chat and log are kept in the browser between visits.
+
+It costs nothing to run. Behind the scenes it uses **[FreeLLMAPI](https://github.com/tashfeenahmed/freellmapi)**, an open-source router that combines the free tiers of many AI providers. If one is busy or out of quota, it moves on to the next one automatically.
 
 ## Install on a Mac (one command)
 
@@ -18,24 +21,22 @@ Open **Terminal** (press ⌘ Space, type "Terminal", press Enter), paste this li
 curl -fsSL https://raw.githubusercontent.com/khleeq92-netizen/FreeLLM/claude/lucid-sagan-282tpm/install.sh | bash
 ```
 
-The first install takes about 3–6 minutes. When it finishes, the app opens in your browser at **http://127.0.0.1:3100**.
+The first install takes about 3–6 minutes, then the app opens at **http://127.0.0.1:3100**. You don't need anything else installed and you don't need admin rights. Everything goes into `~/FreeLLM-Assistant`.
 
-You don't need anything else installed and you don't need admin rights. Everything goes into one folder, `~/CourseAI`. If your Mac doesn't have Node.js, a private copy is downloaded into that folder.
+If you installed the earlier **Course AI** version, the installer copies its keys and data across automatically. After that you can delete the old `~/CourseAI` folder.
 
 ## Daily use
 
 | To… | Do this |
 |---|---|
-| Start | Double-click **Course AI** on your Desktop (or run `~/CourseAI/start.sh`) |
-| Stop | Run `~/CourseAI/stop.sh` |
+| Start | Double-click **FreeLLM Assistant** on your Desktop (or run `~/FreeLLM-Assistant/start.sh`) |
+| Stop | Run `~/FreeLLM-Assistant/stop.sh` |
 | Update | Run the install command again. Your keys, data and password are kept. |
-| Remove everything | Run `~/CourseAI/uninstall.sh` |
+| Remove everything | Run `~/FreeLLM-Assistant/uninstall.sh` |
 
-> First time you double-click **Course AI.command**, macOS may ask whether to open it. Click **Open**. If it is blocked, right-click it, choose **Open**, then **Open** again.
+## Faster answers (strongly recommended, free)
 
-## Getting better answers (optional, free)
-
-The app works straight away using FreeLLMAPI's **no-signup providers**. For faster and smarter answers, add one or more **free** keys under **⚙️ Settings** in the app. None of them needs a credit card:
+Without keys, answers come from no-signup providers and can take 10–60 seconds. Add a **free** key under **⚙️ Settings** to get answers in a few seconds. No credit card is needed:
 
 | Provider | Get a free key |
 |---|---|
@@ -45,58 +46,57 @@ The app works straight away using FreeLLMAPI's **no-signup providers**. For fast
 | OpenRouter | https://openrouter.ai/keys |
 | Mistral | https://console.mistral.ai/api-keys |
 
-You can also pass keys in during install:
+## ⚠️ Privacy: read before using real data
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/khleeq92-netizen/FreeLLM/claude/lucid-sagan-282tpm/install.sh | GEMINI_API_KEY=your-key GROQ_API_KEY=your-key bash
-```
+Files are read **on your computer**, but the text you send with a question goes to whichever free AI provider answers it. **Free tiers may use what you send to improve their models.** Do **not** send student records, Aadhaar or phone numbers, fee details of named students, staff personal data, or trading account credentials through free providers. Use sample or anonymised data for testing. Sensitive data needs a paid provider with a no-training agreement, or a model running on your own computer.
 
 ## How it fits together
 
 ```
-Browser ──► Study Buddy (127.0.0.1:3100) ──► FreeLLMAPI router (127.0.0.1:3001) ──► free AI providers
-             app/server.mjs + index.html       picks a free model, falls back       Gemini, Groq, Mistral…
-                                               when one is rate-limited
+Browser ──► Assistant (127.0.0.1:3100) ──► FreeLLMAPI router (127.0.0.1:3001) ──► free AI providers
+            app/server.mjs + index.html      picks a free model, falls back       Gemini, Groq, Mistral…
+            (file readers run in browser)    when one is rate-limited
 ```
 
 - Both services listen on **127.0.0.1 only**, so other computers on your network can't reach them.
-- Provider keys are stored encrypted inside FreeLLMAPI (`~/CourseAI/data`). The browser never sees them.
-- The FreeLLMAPI dashboard (http://127.0.0.1:3001) shows every model, usage and analytics. Its login is printed at the end of the install and shown in **⚙️ Settings**.
+- Provider keys are stored encrypted inside FreeLLMAPI (`~/FreeLLM-Assistant/data`). The browser never sees them.
+- FreeLLMAPI dashboard: http://127.0.0.1:3001. Its login is shown in **⚙️ Settings**.
 
-## Testing whether it's good enough for your course
+## Limits of this version
 
-1. Load a real chapter (Load file → PDF), or click **Try a sample lesson**.
-2. Try each tab a few times, and switch **AI mode** between *Fast*, *Smartest available* and *Fusion*.
-3. Open **📊 Test log** to see the success rate, average response time and which providers answered. Click **Export CSV** to share the results.
-
-Things to know: free tiers have daily limits that reset at midnight UTC, quality can dip late in the day as the best models run out, and response speed varies by provider. That's fine for a pilot or a small class, but a large class or a graded product should add a paid provider as a backup.
+- Single user, on one computer. There are no logins or roles yet.
+- Scanned PDFs (images of text), photos and chart screenshots aren't read yet.
+- Excel edits are done by the AI row by row (up to 2,000 rows). Check the result before using it officially.
+- Answers about numbers use exact column totals the app computes, but always double-check important figures.
 
 ## Options
 
-Set these before `bash` in the install command (for example `... | COURSEAI_PORT=4000 bash`):
+Set these before `bash` in the install command (for example `... | APP_PORT=4000 bash`):
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `COURSEAI_HOME` | `~/CourseAI` | Install folder |
-| `COURSEAI_PORT` | `3100` | Study Buddy port (the next free port is used if this one is busy) |
+| `ASSISTANT_HOME` | `~/FreeLLM-Assistant` | Install folder |
+| `APP_PORT` | `3100` | Assistant port (the next free port is used if this one is busy) |
 | `FREELLMAPI_PORT` | `3001` | FreeLLMAPI port (the next free port is used if this one is busy) |
 | `FREELLMAPI_REF` | `main` | FreeLLMAPI branch or tag to install |
-| `COURSEAI_NO_OPEN` | `0` | `1` = don't open the browser |
-| `COURSEAI_NO_START` | `0` | `1` = install only |
+| `GEMINI_API_KEY`, `GROQ_API_KEY`, … | — | Free keys to add during install |
+| `ASSISTANT_NO_OPEN` / `ASSISTANT_NO_START` | `0` | `1` = don't open the browser / install only |
 
 ## Troubleshooting
 
-- **"No AI models yet"**: the no-signup providers appear after FreeLLMAPI's first catalog sync, which needs internet and can take a minute. Or just add a free Gemini key in ⚙️ Settings.
-- **"No free AI provider could answer right now"**: the free limits are used up or the providers are busy. Wait a bit, switch AI mode, or add another free key.
-- **Logs**: `~/CourseAI/logs/` (`build.log`, `freellmapi.log`, `app.log`).
+- **"No AI models yet"**: the no-signup providers appear about a minute after the first start. Or add a free Gemini key in ⚙️ Settings.
+- **"No free AI provider could answer right now"**: free limits are used up or providers are busy. Wait, switch AI mode, or add another free key.
+- **A file says "Could not read"**: save Word files as .docx, and scanned PDFs aren't supported yet.
+- **Logs**: `~/FreeLLM-Assistant/logs/` (`build.log`, `freellmapi.log`, `app.log`).
 
 ## For developers
 
 | Path | What it is |
 |---|---|
-| `app/server.mjs` | Zero-dependency Node server: serves the UI and forwards requests to FreeLLMAPI |
+| `app/server.mjs` | Zero-dependency Node server: serves the UI and file-reader libraries, and forwards requests to FreeLLMAPI |
 | `app/public/index.html` | The whole UI (vanilla HTML/CSS/JS) |
+| `app/package.json` | Browser file readers: SheetJS (Excel), mammoth (Word), pdf.js (PDF) |
 | `installer/install.template.sh` | Installer source |
-| `install.sh` | **Generated** with `node scripts/build-installer.mjs` (embeds the app files). Don't edit it by hand. |
+| `install.sh` | **Generated** with `node scripts/build-installer.mjs`. Don't edit it by hand. |
 | `tests/mock-provider.mjs` | Fake OpenAI-compatible provider for testing offline |
-| `tests/ui-test.cjs` | Playwright browser test of every tab |
+| `tests/ui-test.cjs` | Playwright test: uploads Excel, Word and PDF, then uses every tab |
